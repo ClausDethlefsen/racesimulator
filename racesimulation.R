@@ -59,5 +59,12 @@ timerange <- range(runners$Starttime,runners$Endtime)
 raceduration <- timerange[2] - timerange[1]
 min.max <- as.numeric(raceduration,units="mins")
 
+## add delay
+## simulate row-wise
+## make a matrix with Sim>0 
+## apply(mat,2,sum) is number of runners on the route per minute
+## make a matrix with distance %% route_length which is location on route
+## make a histogram of 'arrival times' (use kernel-density to smooth)
+
 
 
