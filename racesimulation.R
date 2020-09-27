@@ -13,17 +13,19 @@
 library(tidyverse)
 library(lubridate)
 
+tracklength <- 7
+
 ## Input
 heats <- 
   tribble(
     ~Heat, ~Starttime, ~Distance,  ~N, ~mintime, ~maxtime, 
   "21A", ymd_hms("2020-11-15 09:00:00"), 21,  50, 108, 160,
-  "14A", ymd_hms("2020-11-15 09:30:00"), 14,  50,  75, 100,
-  "14B", ymd_hms("2020-11-15 09:45:00"), 14,  50, 100, 130,
-  "14C", ymd_hms("2020-11-15 10:00:00"), 14,  50, 100, 130,
-  "07A",  ymd_hms("2020-11-15 10:15:00"),  7,  50,  35,  50,
-  "07B",  ymd_hms("2020-11-15 10:30:00"),  7,  50,  50,  75,
-  "07C",  ymd_hms("2020-11-15 10:45:00"),  7,  50,  75,  90
+  "14A", ymd_hms("2020-11-15 10:00:00"), 14,  50,  75, 100,
+  "14B", ymd_hms("2020-11-15 11:30:00"), 14,  50, 100, 130,
+  "14C", ymd_hms("2020-11-15 12:15:00"), 14,  50, 100, 130,
+  "07A",  ymd_hms("2020-11-15 13:30:00"),  7,  50,  35,  50,
+  "07B",  ymd_hms("2020-11-15 14:15:00"),  7,  50,  50,  75,
+  "07C",  ymd_hms("2020-11-15 14:30:00"),  7,  50,  75,  90
   )
 
 cat("Last runner should arrive:\n")
@@ -54,15 +56,32 @@ colnames(runners) <- c("No", "Duration", "Heat", "Distance", "Starttime")
 runners$Endtime <- runners$Starttime + runners$Duration
 runners$pace <- runners$Duration/runners$Distance
 runners$speed <- 1/as.numeric(runners$pace)*60
+runners$delay <- as.numeric(runners$Starttime-min(runners$Starttime),unit="mins")
 
 timerange <- range(runners$Starttime,runners$Endtime)
 raceduration <- timerange[2] - timerange[1]
 min.max <- as.numeric(raceduration,units="mins")
 
-## add delay
-## simulate row-wise
-## make a matrix with Sim>0 
-## apply(mat,2,sum) is number of runners on the route per minute
+Sims <- matrix(0,nrow=nrow(runners),ncol=min.max) 
+for (i in 1:nrow(runners)) {
+  N <- as.numeric(runners[i,]$Duration,unit="mins")
+  idx <- runners[i,]$delay + 1:N
+  Sims[i,idx] <- (1:N)*runners[i,]$speed  
+}
+
+Sims.ontrack <- Sims>0
+n.ontrack <- apply(Sims.ontrack,2,sum)
+
+plot(n.ontrack)
+
+Sims.location <- Sims %% tracklength
+
+Sims.rank <- apply(Sims.location, 2, rank)
+
+Sims.rankdiff <- Sims.rank
+for (j in 2:ncol(Sims.rank)) 
+  Sims.rankdiff[,j] <- Sims.rank[,j] - Sims.rank[,j-1]  
+
 ## make a matrix with distance %% route_length which is location on route
 ## make a histogram of 'arrival times' (use kernel-density to smooth)
 
